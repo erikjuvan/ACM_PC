@@ -5,6 +5,8 @@
 #include <fftw3.h>
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
+#include <chrono>
 
 class FFT {
 private:
@@ -32,6 +34,28 @@ private:
 
 	std::vector<FFTStruct> fftChannels_;
 
+	void Optimize(FFTStruct& fftCh, double& maxVal, double& idx, int& size) {
+		size = chBufSize_;
+		int tmpSize = size;
+		int target = size - 50;
+		int i = 0;
+
+		while (--tmpSize > target) {
+			fftCh.fftPlan = fftw_plan_dft_r2c_1d(tmpSize, fftCh.dataIn, reinterpret_cast<fftw_complex*>(fftCh.dataOut), FFTW_MEASURE);
+			// Run FFT
+			fftw_execute(fftCh.fftPlan);
+			// Find max element - optimized
+			std::complex<double>* newMaxVal = std::max_element(fftCh.dataOut + 1, fftCh.dataOut + tmpSize / 2,	// discard 0 index (DC offset) and search only the first half
+				[](std::complex<double> const & lhs, std::complex<double> const & rhs) { return std::abs(lhs) < std::abs(rhs); });			
+
+			if (std::abs(*newMaxVal) > maxVal) {
+				maxVal = std::abs(*newMaxVal);				
+				idx = std::distance(fftCh.dataOut, newMaxVal);
+				size = tmpSize;
+			}
+		}	
+	}
+
 public:
 
 	FFT(int numOfCh, int bufSize, int usPerSample) : numOfChannels_(numOfCh), chBufSize_(bufSize), usPerSample_(usPerSample) {
@@ -55,17 +79,21 @@ public:
 			fftw_execute(fftChannels_[ci].fftPlan);	
 
 			// Find max element
-			auto maxVal = std::max_element(fftChannels_[ci].dataOut + 1, fftChannels_[ci].dataOut + chBufSize_ / 2,	// discard 0 index (DC offset) and search only the first half
+			std::complex<double>* maxVal = std::max_element(fftChannels_[ci].dataOut + 1, fftChannels_[ci].dataOut + chBufSize_ / 2,	// discard 0 index (DC offset) and search only the first half
 				[](std::complex<double> const & lhs, std::complex<double> const & rhs) { return std::abs(lhs) < std::abs(rhs); });
 			double idx = std::distance(fftChannels_[ci].dataOut, maxVal);
 
+			// Optimize
+			int fftSize = chBufSize_;
+			double maxRealVal = std::abs(*maxVal);
+			Optimize(fftChannels_[ci], maxRealVal, idx, fftSize);
+
 			// Return values
-			freq[ci] = idx / ((double)chBufSize_ * (1e-6 * double(usPerSample_)));
-			ampl[ci] = std::abs(*maxVal) * 2.0 / chBufSize_;
+			freq[ci] = idx / ((double)fftSize * (1e-6 * double(usPerSample_)));
+			ampl[ci] = maxRealVal * 2.0 / fftSize;
 			if (num_cycles != nullptr) {
 				num_cycles[ci] = static_cast<int>(idx);
 			}
-
 		}
 	}
 };
