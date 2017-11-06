@@ -46,7 +46,7 @@ void InitParameters(std::string& sComPort, int& nCh, int& usPerSample, int& chBu
 		std::cout << sNCh << std::endl;
 		std::cout << "Us per sample: ";
 		std::cout << sUsPerSample << std::endl;
-		std::cout << "Single channel buffer size (power of 2, e.g. 1024): ";
+		std::cout << "Single channel buffer size: ";
 		std::cout << sChBufSize << std::endl;
 	}
 	else {
@@ -58,7 +58,7 @@ void InitParameters(std::string& sComPort, int& nCh, int& usPerSample, int& chBu
 		std::cout << "Us per sample: ";
 		std::cin >> sUsPerSample;
 		usPerSample = std::stoi(sUsPerSample);
-		std::cout << "Single channel buffer size (power of 2, e.g. 1024): ";
+		std::cout << "Single channel buffer size: ";
 		std::cin >> sChBufSize;
 		chBufSize = std::stoi(sChBufSize);
 	}
@@ -112,10 +112,17 @@ CONSOLE_CURSOR_INFO	Console::cursorInfo;
 
 #endif
 
+void Help() {
+	std::cout << "Buffer size directly influences resolution. Setting the size to 1000 (at 1ms sample rate) gives a 1Hz resolution (e.g. a 40 Hz result\
+could be from a 39.5 to 40.4 Hz signal. Setting the size to 10000 gives a 0.1Hz resolution, and so on." << std::endl << std::endl;
+}
+
 int main() {			
 	
 	std::string sComPort;
 	int nCh, usPerSample, chBufSize;
+
+	Help();
 	InitParameters(sComPort, nCh, usPerSample, chBufSize);
 	
 	Console::InitConsole();
@@ -157,7 +164,7 @@ int main() {
 			for (int i = 0; i < nCh; i++) {
 				std::cout << "Ch " << i << "\tcycles: " << std::setw(4) << cycles[i] << "\tfreq: " << std::setw(4) << freq[i] << "\tamp: " << std::setw(4) << ampl[i] << std::endl;
 			}
-		}		
+		}
 	}
 
 	if (buffer != nullptr) {
