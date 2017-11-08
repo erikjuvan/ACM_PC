@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0)
-project(ACM_PC)
+project(ADC_Sampler-PC)
 
 include_directories(include)
 
