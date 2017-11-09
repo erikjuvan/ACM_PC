@@ -30,7 +30,7 @@ private:
 
 	int numOfChannels_;
 	int chBufSize_;
-	int usPerSample_;
+	int sampleFreq_;
 
 	std::vector<FFTStruct> fftChannels_;
 
@@ -58,7 +58,7 @@ private:
 
 public:
 
-	FFT(int numOfCh, int bufSize, int usPerSample) : numOfChannels_(numOfCh), chBufSize_(bufSize), usPerSample_(usPerSample) {
+	FFT(int numOfCh, int bufSize, int sampleFreq) : numOfChannels_(numOfCh), chBufSize_(bufSize), sampleFreq_(sampleFreq) {
 		fftChannels_.reserve(numOfCh);
 		for (int i = 0; i < numOfCh; i++)
 			fftChannels_.emplace_back(bufSize);
@@ -89,7 +89,7 @@ public:
 			Optimize(fftChannels_[ci], maxRealVal, idx, fftSize);
 
 			// Return values
-			freq[ci] = idx / ((double)fftSize * (1e-6 * double(usPerSample_)));
+			freq[ci] = (double)(idx * sampleFreq_) / (double)fftSize;
 			ampl[ci] = maxRealVal * 2.0 / fftSize;
 			if (num_cycles != nullptr) {
 				num_cycles[ci] = static_cast<int>(idx);

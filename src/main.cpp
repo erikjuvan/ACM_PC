@@ -19,8 +19,8 @@
 #endif
 
 
-void InitParameters(std::string& sComPort, int& nCh, int& usPerSample, int& chBufSize) {
-	std::string sNCh, sUsPerSample, sChBufSize;
+void InitParameters(std::string& sComPort, int& nCh, int& sampleFreq, int& chBufSize) {
+	std::string sNCh, sSampleFreq, sChBufSize;
 
 	std::ifstream initFile("../res/init.txt");
 	if (initFile.is_open()) {
@@ -34,18 +34,18 @@ void InitParameters(std::string& sComPort, int& nCh, int& usPerSample, int& chBu
 
 		initFile >> sComPort;
 		initFile >> sNCh;
-		initFile >> sUsPerSample;
+		initFile >> sSampleFreq;
 		initFile >> sChBufSize;
 		nCh = std::stoi(sNCh);
-		usPerSample = std::stoi(sUsPerSample);
+		sampleFreq = std::stoi(sSampleFreq);
 		chBufSize = std::stoi(sChBufSize);
 
 		std::cout << "COM Port: ";
 		std::cout << sComPort << std::endl;
 		std::cout << "Number of channels: ";
 		std::cout << sNCh << std::endl;
-		std::cout << "Us per sample: ";
-		std::cout << sUsPerSample << std::endl;
+		std::cout << "Sample frequency: ";
+		std::cout << sSampleFreq << std::endl;
 		std::cout << "Single channel buffer size: ";
 		std::cout << sChBufSize << std::endl;
 	}
@@ -55,9 +55,9 @@ void InitParameters(std::string& sComPort, int& nCh, int& usPerSample, int& chBu
 		std::cout << "Number of channels: ";
 		std::cin >> sNCh;
 		nCh = std::stoi(sNCh);
-		std::cout << "Us per sample: ";
-		std::cin >> sUsPerSample;
-		usPerSample = std::stoi(sUsPerSample);
+		std::cout << "Sample frequency: ";
+		std::cin >> sSampleFreq;
+		sampleFreq = std::stoi(sSampleFreq);
 		std::cout << "Single channel buffer size: ";
 		std::cin >> sChBufSize;
 		chBufSize = std::stoi(sChBufSize);
@@ -120,10 +120,10 @@ could be from a 39.5 to 40.4 Hz signal. Setting the size to 10000 gives a 0.1Hz 
 int main() {			
 	
 	std::string sComPort;
-	int nCh, usPerSample, chBufSize;
+	int nCh, sampleFreq, chBufSize;
 
 	Help();
-	InitParameters(sComPort, nCh, usPerSample, chBufSize);
+	InitParameters(sComPort, nCh, sampleFreq, chBufSize);
 	
 	Console::InitConsole();
 
@@ -133,10 +133,10 @@ int main() {
 		std::cout << "Couldn't allocate memory. Request of " << chBufSize * nCh << " bytes is too big" << std::endl;
 	}
 
-	FFT fft(nCh, chBufSize, usPerSample);
+	FFT fft(nCh, chBufSize, sampleFreq);
 	MCU *mcu;
 	try {
-		mcu = new MCU(sComPort, nCh, chBufSize, usPerSample);
+		mcu = new MCU(sComPort, nCh, chBufSize, sampleFreq);
 	}	
 	catch (const serial::IOException& e) {
 		std::cerr << e.what() << std::endl;
