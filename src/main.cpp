@@ -7,172 +7,114 @@
 #include <algorithm>
 #include <chrono>
 #include <complex>
+#include <thread>
 
 #include "FFT.h"
 #include "MCU.h"
-
-#if defined(_WIN32)
-#include <Windows.h>
-#elif defined(__linux__) 
-#include<stdio.h>
-#include<stdlib.h>
-#endif
+#include "Console.h"
 
 
-void InitParameters(std::string& sComPort, int& nCh, int& sampleFreq, int& chBufSize) {
-	std::string sNCh, sSampleFreq, sChBufSize;
+class Parameters {
+private:
+	std::string sNCh, sPacketsPerChannel, sSampleFreq, sChBufSize;
 
-	std::ifstream initFile("../res/init.txt");
-	if (initFile.is_open()) {
-		std::cout << "Found \"init.txt\" Press enter to load parameters from file.";		
-		std::getchar();
+	void clearScreen() {
 #if defined(_WIN32)
 		system("cls");
 #elif defined(__linux__)
 		system("clear");
 #endif
-
-		initFile >> sComPort;
-		initFile >> sNCh;
-		initFile >> sSampleFreq;
-		initFile >> sChBufSize;
-		nCh = std::stoi(sNCh);
-		sampleFreq = std::stoi(sSampleFreq);
-		chBufSize = std::stoi(sChBufSize);
-
-		std::cout << "COM Port: ";
-		std::cout << sComPort << std::endl;
-		std::cout << "Number of channels: ";
-		std::cout << sNCh << std::endl;
-		std::cout << "Sample frequency: ";
-		std::cout << sSampleFreq << std::endl;
-		std::cout << "Single channel buffer size: ";
-		std::cout << sChBufSize << std::endl;
 	}
-	else {
-		std::cout << "COM Port: ";
-		std::cin >> sComPort;
-		std::cout << "Number of channels: ";
-		std::cin >> sNCh;
-		nCh = std::stoi(sNCh);
-		std::cout << "Sample frequency: ";
-		std::cin >> sSampleFreq;
-		sampleFreq = std::stoi(sSampleFreq);
-		std::cout << "Single channel buffer size: ";
-		std::cin >> sChBufSize;
-		chBufSize = std::stoi(sChBufSize);
-	}
-}
-
-class Console {
-#if defined(_WIN32)
-	static HANDLE hStdout;
-	static CONSOLE_SCREEN_BUFFER_INFO csbiInfo;
-	static CONSOLE_CURSOR_INFO cursorInfo;
-#endif
 
 public:
+	std::string comPort;
+	int nCh, packetsPerChannel, sampleFreq, chBufSize;
 
-	static bool InitConsole() {
-#if defined(_WIN32)
-		hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-		if (hStdout == INVALID_HANDLE_VALUE) {
-			std::cout << "Error: GetStdHandle\n";
-			return false;
-		}
-		if (!GetConsoleScreenBufferInfo(hStdout, &csbiInfo))
-		{
-			std::cout << "Error: GetConsoleScreenBufferInfo\n";
-			return false;
-		}
-
-		GetConsoleCursorInfo(hStdout, &cursorInfo);
-		cursorInfo.bVisible = false;
-		SetConsoleCursorInfo(hStdout, &cursorInfo);
-#endif
-		return true;
+	Parameters() : nCh(0), packetsPerChannel(0), sampleFreq(0), chBufSize(0) {
 	}
 
-	static void GotoXY(int x, int y) {
-#if defined(_WIN32)
-		csbiInfo.dwCursorPosition.X = x;
-		csbiInfo.dwCursorPosition.Y = y;
-		SetConsoleCursorPosition(hStdout, csbiInfo.dwCursorPosition);
-#elif defined(__linux__)
-		printf("%c[%d;%df", 0x1B, y + 1, x);
-#endif
+	void set() {
+		bool succeed = false;
+		std::ifstream initFile("../res/init.txt");
+
+		if (initFile.is_open()) {
+			std::cout << "Found \"init.txt\" Press enter to load parameters from file.";
+			std::getchar();
+			clearScreen();
+
+			initFile >> comPort;
+			initFile >> sNCh;
+			initFile >> sPacketsPerChannel;
+			initFile >> sSampleFreq;
+			initFile >> sChBufSize;
+
+			if (sChBufSize.size() != 0) {
+				nCh = std::stoi(sNCh);
+				packetsPerChannel = std::stoi(sPacketsPerChannel);
+				sampleFreq = std::stoi(sSampleFreq);
+				chBufSize = std::stoi(sChBufSize);
+				succeed = true;
+			} else {
+				std::cerr << "Error parsing init file" << std::endl;
+			}
+		}
+
+		if (!succeed) {			
+			// Get parameters via command line
+			std::cout << "COM Port: "; std::cin >> comPort;
+			std::cout << "Number of channels: "; std::cin >> sNCh; nCh = std::stoi(sNCh);
+			std::cout << "Packets per channel: "; std::cin >> sPacketsPerChannel; packetsPerChannel = std::stoi(sPacketsPerChannel);
+			std::cout << "Sample frequency: "; std::cin >> sSampleFreq; sampleFreq = std::stoi(sSampleFreq);
+			std::cout << "Channel buffer size: "; std::cin >> sChBufSize; chBufSize = std::stoi(sChBufSize);
+		}
+	}
+
+	void display() {
+		clearScreen();
+		std::cout << "COM Port: " << comPort << std::endl;
+		std::cout << "Number of channels: " << sNCh << std::endl;
+		std::cout << "Packets per channel: " << sPacketsPerChannel << std::endl;
+		std::cout << "Sample frequency: " << sSampleFreq << " Hz" << std::endl;
+		std::cout << "Channel buffer size: " << sChBufSize << std::endl;
 	}
 };
 
-#if defined(_WIN32)
-HANDLE Console::hStdout;
-CONSOLE_SCREEN_BUFFER_INFO Console::csbiInfo;
-CONSOLE_CURSOR_INFO	Console::cursorInfo;
-#elif defined(__linux__)
-
-#endif
-
-void Help() {
-	std::cout << "Buffer size directly influences resolution. Setting the size to 1000 (at 1ms sample rate) gives a 1Hz resolution (e.g. a 40 Hz result\
-could be from a 39.5 to 40.4 Hz signal. Setting the size to 10000 gives a 0.1Hz resolution, and so on." << std::endl << std::endl;
-}
-
-int main() {			
-	
-	std::string sComPort;
-	int nCh, sampleFreq, chBufSize;
-
-	Help();
-	InitParameters(sComPort, nCh, sampleFreq, chBufSize);
-	
-	Console::InitConsole();
+int main() {
+	Parameters params;
+	params.set();
+	Console::initConsole();
+	params.display();
 
 	uint8_t* buffer = nullptr;
-	buffer = new uint8_t[chBufSize * nCh];
+	buffer = new uint8_t[params.chBufSize + params.nCh];
 	if (buffer == nullptr) {
-		std::cout << "Couldn't allocate memory. Request of " << chBufSize * nCh << " bytes is too big" << std::endl;
+		std::cout << "Couldn't allocate memory. Request of " << params.chBufSize * params.nCh << " bytes is too big" << std::endl;
 	}
 
-	FFT fft(nCh, chBufSize, sampleFreq);
-	MCU *mcu;
-	try {
-		mcu = new MCU(sComPort, nCh, chBufSize, sampleFreq);
-	}	
-	catch (const serial::IOException& e) {
-		std::cerr << e.what() << std::endl;
-		return -1;
-	}
-	catch (const std::bad_alloc& e) {
-		std::cerr << e.what() << std::endl;
-		return -1;
-	}
+	FFT fft(params.nCh, params.sampleFreq, params.chBufSize);
+	fft.setOptimizationLevel(30);
+	MCU mcu(params.comPort, params.nCh, params.packetsPerChannel, params.sampleFreq, params.chBufSize);
 
-	if (!mcu->IsSerialOpen()) {
-		return -1;
-	}
+	double* freq = new double[params.nCh];
+	double* ampl = new double[params.nCh];
+	int* cycles = new int[params.nCh];
 
-	const int MaxNumOfChannels = 10;
-	double freq[MaxNumOfChannels] = { 0 };
-	double ampl[MaxNumOfChannels] = { 0 };
-	int cycles[MaxNumOfChannels] = { 0 };
-	
 	while (true) {
-		if (mcu->ReadChunk((uint8_t*)buffer) > 0) {
-			Console::GotoXY(0, 5);
-			fft.Compute(buffer, freq, ampl, cycles);
+		if (mcu.readChunk((uint8_t*)buffer) > 0) {
+			Console::gotoXY(0, 6);
+			fft.run(buffer, freq, ampl, cycles);
 
-			for (int i = 0; i < nCh; i++) {
-				std::cout << "Ch " << i << "\tcycles: " << std::setw(4) << cycles[i] << "\tfreq: " << std::setw(4) << freq[i] << "\tamp: " << std::setw(4) << ampl[i] << std::endl;
+			for (int i = 0; i < params.nCh; i++) {
+				if (freq[i] >= 0.05) freq[i] -= 0.05;	// fix last digit error
+				std::cout << "Ch " << i << "\tcycles: " <<  cycles[i] << "\tfreq: " << std::setw(4) << std::setprecision(1) << std::fixed << freq[i] << "\tamp: " <<ampl[i] << std::endl;
 			}
 		}
 	}
 
-	if (buffer != nullptr) {
-		delete[] buffer;
-	}
-	if (mcu != nullptr) {
-		delete mcu;
-	}
+	delete[] buffer;
+	delete[] freq;
+	delete[] ampl;
+	delete[] cycles;
 
 	return 0;
 }
