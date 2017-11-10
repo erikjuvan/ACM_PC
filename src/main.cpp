@@ -31,6 +31,7 @@ public:
 	int nCh, packetsPerChannel, sampleFreq, chBufSize;
 
 	Parameters() : nCh(0), packetsPerChannel(0), sampleFreq(0), chBufSize(0) {
+		set();
 	}
 
 	void set() {
@@ -81,26 +82,22 @@ public:
 
 int main() {
 	Parameters params;
-	params.set();
 	Console::initConsole();
 	params.display();
 
-	uint8_t* buffer = nullptr;
-	buffer = new uint8_t[params.chBufSize + params.nCh];
-	if (buffer == nullptr) {
-		std::cout << "Couldn't allocate memory. Request of " << params.chBufSize * params.nCh << " bytes is too big" << std::endl;
-	}
+	uint8_t* buffer = new uint8_t[params.chBufSize * params.nCh];
 
 	FFT fft(params.nCh, params.sampleFreq, params.chBufSize);
 	fft.setOptimizationLevel(30);
 	MCU mcu(params.comPort, params.nCh, params.packetsPerChannel, params.sampleFreq, params.chBufSize);
 
-	double* freq = new double[params.nCh];
-	double* ampl = new double[params.nCh];
-	int* cycles = new int[params.nCh];
+	std::vector<double> freq(params.nCh);
+	std::vector<double> ampl(params.nCh);
+	std::vector<int> cycles(params.nCh);
+	
 
 	while (true) {
-		if (mcu.readChunk((uint8_t*)buffer) > 0) {
+		if (mcu.readChunk(buffer) > 0) {
 			Console::gotoXY(0, 6);
 			fft.run(buffer, freq, ampl, cycles);
 
@@ -112,9 +109,6 @@ int main() {
 	}
 
 	delete[] buffer;
-	delete[] freq;
-	delete[] ampl;
-	delete[] cycles;
 
 	return 0;
 }

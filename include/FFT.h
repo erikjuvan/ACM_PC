@@ -56,7 +56,7 @@ public:
 				fftChannels_[chi].fftPlan.push_back(fftw_plan_dft_r2c_1d(chBufSize_ - i, fftChannels_[chi].dataIn, reinterpret_cast<fftw_complex*>(fftChannels_[chi].dataOut), FFTW_MEASURE));	
 	}
 
-	void run(const uint8_t* buf, double* freq, double* ampl, int* num_cycles) {
+	void run(const uint8_t* buf, std::vector<double>& freq, std::vector<double>& ampl, std::vector<int>& num_cycles) {
 		for (int ci = 0; ci < numOfChannels_; ++ci) {
 			// Setup data
 			for (int i = 0; i < chBufSize_; ++i) {
@@ -84,9 +84,7 @@ public:
 			// Return values
 			freq[ci] = (double)(idx * sampleFreq_) / (double)size;
 			ampl[ci] = maxVal * 2 / size;
-			if (num_cycles != nullptr) {
-				num_cycles[ci] = static_cast<int>(idx);
-			}
+			num_cycles[ci] = static_cast<int>(idx);
 		}
 	}
 };
