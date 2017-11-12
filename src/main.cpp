@@ -86,20 +86,18 @@ int main() {
 	params.display();
 
 	uint8_t* buffer = new uint8_t[params.chBufSize * params.nCh];
-
-	FFT fft(params.nCh, params.sampleFreq, params.chBufSize);
-	fft.setOptimizationLevel(30);
-	MCU mcu(params.comPort, params.nCh, params.packetsPerChannel, params.sampleFreq, params.chBufSize);
-
 	std::vector<double> freq(params.nCh);
 	std::vector<double> ampl(params.nCh);
 	std::vector<int> cycles(params.nCh);
-	
+
+	FFT fft(params.nCh, params.sampleFreq, params.chBufSize, buffer, freq, ampl, cycles);	
+	fft.setOptimizationLevel(30);
+	MCU mcu(params.comPort, params.nCh, params.packetsPerChannel, params.sampleFreq, params.chBufSize);	
 
 	while (true) {
 		if (mcu.readChunk(buffer) > 0) {
-			Console::gotoXY(0, 6);
-			fft.run(buffer, freq, ampl, cycles);
+			fft.run();
+			Console::gotoXY(0, 6);			
 
 			for (int i = 0; i < params.nCh; i++) {
 				if (freq[i] >= 0.05) freq[i] -= 0.05;	// fix last digit error
