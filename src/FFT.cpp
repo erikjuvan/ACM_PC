@@ -37,7 +37,7 @@ void FFT::print() {
 	int i = 0;
 	for (auto& fftCh : fftChannels_) {
 		if (fftCh.freq_ >= 0.05) fftCh.freq_ -= 0.05;	// fix last digit error
-		std::cout << "Ch " << i++ << "\tcycles: " << fftCh.num_cycles_ << "\tfreq: " << std::setw(4) << std::setprecision(1) << std::fixed << fftCh.freq_ << "\tamp: " << fftCh.ampl_ << std::endl;
+		std::cout << "Ch " << i++ << "\tcycles: " << fftCh.num_cycles_ << "\tfreq: " << std::setw(5) << std::setprecision(1) << std::fixed << fftCh.freq_ << "\tamp: " << fftCh.ampl_ << std::endl;
 	}	
 }
 
