@@ -1,7 +1,6 @@
 #pragma once
 #include <serial/serial.h>
 #include <string>
-#include <iostream>
 
 class MCU {
 private:
@@ -12,26 +11,10 @@ private:
 
 public:
 
-	MCU(const std::string& port, int numOfChannels, int packetsPerChannel, int sampleFreq, int chBufSize) :
-		serial_(port), numOfChannels_(numOfChannels), sampleFreq_(sampleFreq), chBufSize_(chBufSize) {
+	MCU(const std::string& port, int numOfChannels, int packetsPerChannel, int sampleFreq, int chBufSize);
+	~MCU();
 
-			serial_.flush();
-			serial_.write(std::string("go"));
-			serial_.write(std::to_string(numOfChannels));
-			serial_.write(std::to_string(packetsPerChannel));
-			serial_.write(std::to_string(sampleFreq));
-	}
-
-	~MCU() {
-		if (serial_.isOpen()) {
-			serial_.close();
-		}
-	}
-
-	size_t readChunk(uint8_t* data) {
-		return serial_.read(data, numOfChannels_ * chBufSize_);
-	}
-
+	size_t readChunk(uint8_t* data) { return serial_.read(data, numOfChannels_ * chBufSize_); }
 	int getNumOfChannels() { return numOfChannels_; }
 	int getSampleFreq() { return sampleFreq_; }
 	size_t getRxBufferLen() { return serial_.available(); }
