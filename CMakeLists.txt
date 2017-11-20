@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.0)
 project(ADC_Sampler-PC)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release") 
-include_directories(include)
  
 # Add user source files
 file(GLOB SOURCES "src/*.cpp")
@@ -37,3 +36,15 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	${SERIAL_LIBRARIES}
 	${FFTW3_LIBRARIES})
 endif ()
+
+set(FFTW3_DLLS libfftw3-3.dll)
+
+foreach(file_to_be_copied ${FFTW3_DLLS})
+add_custom_command(
+  TARGET ${PROJECT_NAME}
+  POST_BUILD
+  COMMAND ${CMAKE_COMMAND}
+  ARGS -E copy_if_different ${FFTW3_ROOT_DIR}\\${FFTW3_DLLS}
+  ${PROJECT_BINARY_DIR}/$<CONFIG>/${file_to_be_copied})
+endforeach(file_to_be_copied) 
+
