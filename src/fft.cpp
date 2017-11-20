@@ -25,7 +25,7 @@ FFT::FFTStruct::~FFTStruct() {
 
 FFT::FFT(int numOfCh, int sampleFreq, int bufSize, const uint8_t* buf) :
 	numOfChannels_(numOfCh), sampleFreq_(sampleFreq), chBufSize_(bufSize),
-	buf_(buf), runThread_(false), threadCpltCount_(0), thread_(numOfCh) {
+	buf_(buf), thread_(numOfCh) {
 
 	fftChannels_.reserve(numOfCh);
 	for (int i = 0; i < numOfCh; i++) {
@@ -82,12 +82,6 @@ void FFT::threadCompute(int ci) {
 	fftCh.freq_ = (double)(idx * sampleFreq_) / (double)size;
 	fftCh.ampl_ = maxVal * 2 / size;
 	fftCh.num_cycles_ = static_cast<int>(idx);
-
-	std::lock_guard<std::mutex> lock(cpltMutex);
-	if (++threadCpltCount_ >= numOfChannels_) {
-		runThread_ = false;
-	}
-
 }
 
 void FFT::run() {

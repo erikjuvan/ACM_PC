@@ -26,10 +26,6 @@ private:
 	int numOfChannels_;
 	int chBufSize_;
 	int sampleFreq_;
-	// Multi-threading
-	bool runThread_;
-	int threadCpltCount_;
-	std::mutex cpltMutex;
 	// Thread accessible parameters
 	const uint8_t* buf_;
 
