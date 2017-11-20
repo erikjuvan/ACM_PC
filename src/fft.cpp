@@ -8,7 +8,7 @@
 #include <thread>
 #include <mutex>
 
-#include "FFT.h"
+#include "fft.h"
 
 FFT::FFTStruct::FFTStruct(int bufSize) : freq_(0), ampl_(0), num_cycles_(0) {
 	dataIn = new double[bufSize]();

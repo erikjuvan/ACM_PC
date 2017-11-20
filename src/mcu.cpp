@@ -1,4 +1,4 @@
-#include "MCU.h"
+#include "mcu.h"
 
 MCU::MCU(const std::string& port, int numOfChannels, int packetsPerChannel, int sampleFreq, int chBufSize) :
 	serial_(port), numOfChannels_(numOfChannels), sampleFreq_(sampleFreq), chBufSize_(chBufSize) {

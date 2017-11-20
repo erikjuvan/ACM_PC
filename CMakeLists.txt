@@ -1,35 +1,39 @@
 cmake_minimum_required(VERSION 3.0)
 project(ADC_Sampler-PC)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release") 
 include_directories(include)
-
-#Can manually add the sources using the set command as follows:
-#set(SOURCES src/mainapp.cpp src/Student.cpp)
  
-#However, the file(GLOB...) allows for wildcard additions:
+# Add user source files
 file(GLOB SOURCES "src/*.cpp")
+# Add user header files
 file(GLOB HEADERS "include/*.h")
 
-# Serial directories
-set(SERIAL_INCLUDE_DIR "" CACHE PATH "Path to serial include directory")
-include_directories(${SERIAL_INCLUDE_DIR})
-set(SERIAL_LIB_DIR "" CACHE PATH "Path to serial lib directory")
-link_directories(${SERIAL_LIB_DIR})
+# Serial
+set(SERIAL_ROOT_DIR "" CACHE PATH "Path to serial root directory")
+find_library(SERIAL_LIBRARIES_RELEASE NAMES "serial" PATHS "${SERIAL_ROOT_DIR}/*" NO_DEFAULT_PATH)
+find_library(SERIAL_LIBRARIES_DEBUG NAMES "serial-d" PATHS "${SERIAL_ROOT_DIR}/*" NO_DEFAULT_PATH)
+set(SERIAL_LIBRARIES debug ${SERIAL_LIBRARIES_DEBUG} optimized ${SERIAL_LIBRARIES_RELEASE})
+find_path(SERIAL_INCLUDE_DIR NAME "serial/serial.h" PATHS "${SERIAL_ROOT_DIR}/*" NO_DEFAULT_PATH)
 
-# FFTW3 directories
-set(FFTW3_INCLUDE_DIR "" CACHE PATH "Path to FFTW3 include directory")
-include_directories(${FFTW3_INCLUDE_DIR})
-set(FFTW3_LIB_DIR "" CACHE PATH "Path to FFTW3 lib directory")
-link_directories(${FFTW3_LIB_DIR})
+# FFTW 3
+set(FFTW3_ROOT_DIR "" CACHE PATH "Path to FFTW3 root directory")
+find_library(FFTW3_LIBRARIES NAME "libfftw3-3" PATHS ${FFTW3_ROOT_DIR} NO_DEFAULT_PATH)
+find_path(FFTW3_INCLUDE_DIR NAME "fftw3.h" PATHS ${FFTW3_ROOT_DIR} NO_DEFAULT_PATH)
 
+link_directories(${SERIAL_LIB_DIR} ${FFTW3_LIB_DIR})
 add_executable(${PROJECT_NAME} ${SOURCES} ${HEADERS})
+target_include_directories(${PROJECT_NAME} PRIVATE include ${SERIAL_INCLUDE_DIR} ${FFTW3_INCLUDE_DIR})
+
 
 if (WIN32)
-target_link_libraries(${PROJECT_NAME} PRIVATE debug serial-d.lib optimized serial.lib
-	debug libfftw3-3.lib optimized libfftw3-3.lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+	${SERIAL_LIBRARIES}
+	${FFTW3_LIBRARIES})
 endif ()
-
+	
 if (UNIX AND NOT APPLE)
-target_link_libraries(${PROJECT_NAME} PRIVATE debug serial-d optimized serial
-	debug fftw3 optimized fftw3)
+target_link_libraries(${PROJECT_NAME} PRIVATE
+	${SERIAL_LIBRARIES}
+	${FFTW3_LIBRARIES})
 endif ()
