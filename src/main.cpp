@@ -23,6 +23,7 @@ int main() {
 
 	FFT fft(params.nCh, params.sampleFreq, params.chBufSize, buffer);	
 	fft.setOptimizationLevel(30);
+	fft.run();	// running fft before starting data capture from MCU makes sure we don't miss any packets (probably beacuse of caching)
 	MCU mcu(params.comPort, params.nCh, params.packetsPerChannel, params.sampleFreq, params.chBufSize);	
 
 	while (true) {
